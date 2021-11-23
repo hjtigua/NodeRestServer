@@ -49,13 +49,9 @@ const usuarioPut = async (req, res = response) => {
   res.json(usuario);
 };
 
-const usuarioPatch = async (req, res = response) => {
-  res.json({
-    msg: "patch Api - controlador",
-  });
-};
-
 const usuarioDelete = async (req, res = response) => {
+  const { uid, user } = req;
+
   const { id } = req.params;
   const usuario = await Usuario.findByIdAndUpdate(id, { estado: false });
   res.json({
@@ -67,6 +63,5 @@ module.exports = {
   usuarioGet,
   usuarioPost,
   usuarioPut,
-  usuarioPatch,
   usuarioDelete,
 };
