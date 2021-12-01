@@ -6,8 +6,10 @@ const {
   categoriasPath,
   productosPath,
   buscarPath,
+  filePath,
 } = require("../routes/api");
 const { dbConnection } = require("../database/config.db");
+const fileUpload = require("express-fileupload");
 class Server {
   constructor() {
     this.app = express();
@@ -27,6 +29,7 @@ class Server {
     this.app.use(categoriasPath, require("../routes/categorias"));
     this.app.use(productosPath, require("../routes/productos"));
     this.app.use(buscarPath, require("../routes/buscar"));
+    this.app.use(filePath, require("../routes/file"));
   }
 
   listen() {
@@ -39,6 +42,14 @@ class Server {
     // Para poder leer un body con formato json
     this.app.use(express.json());
     this.app.use(express.static("public"));
+
+    this.app.use(
+      fileUpload({
+        useTempFiles: true,
+        tempFileDir: "/tmp/",
+        createParentPath: true,
+      })
+    );
   }
   async initDB() {
     await dbConnection();
