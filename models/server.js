@@ -10,6 +10,7 @@ const {
 } = require("../routes/api");
 const { dbConnection } = require("../database/config.db");
 const fileUpload = require("express-fileupload");
+const { socketController } = require("../sockets/SocketController");
 class Server {
   constructor() {
     this.app = express();
@@ -21,6 +22,11 @@ class Server {
     this.middlewares();
     this.routes();
     this.port = process.env.PORT;
+    this.server = require("http").createServer(this.app);
+    this.io = require("socket.io")(this.server);
+
+    //Socket
+    this.sockets();
   }
 
   routes() {
@@ -32,8 +38,12 @@ class Server {
     this.app.use(filePath, require("../routes/file"));
   }
 
+  sockets() {
+    this.io.on("connection", (socket) => socketController(socket, this.io));
+  }
+
   listen() {
-    this.app.listen(this.port, () => {
+    this.server.listen(this.port, () => {
       console.log("Servidor corriendo en el puerto", this.port);
     });
   }

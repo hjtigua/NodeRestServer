@@ -1,0 +1,114 @@
+let usuario = null;
+let socket = null;
+
+const txtUid = document.querySelector("#txtUid");
+const txtMensaje = document.querySelector("#txtMensaje");
+const ulUsuarios = document.querySelector("#ulUsuarios");
+const ulMensajes = document.querySelector("#ulMensajes");
+const btnSalir = document.querySelector("#btnSalir");
+
+const url = location.hostname.includes("localhost")
+  ? "http://localhost:8080/api/auth/"
+  : "https://base-server-node.herokuapp.com/api/auth/";
+
+const validarJWT = async () => {
+  const token = localStorage.getItem("token") || "";
+  if (token.length <= 10) {
+    window.location = "index.html";
+    throw new Error("No hay token valido");
+  }
+
+  const resp = await fetch(url, {
+    headers: {
+      "x-token": token,
+    },
+  });
+
+  const { user, token: tokenDB } = await resp.json();
+  localStorage.setItem("token", tokenDB);
+  usuario = user;
+
+  document.title = usuario.nombre;
+  await conectarSocket();
+};
+
+const conectarSocket = async () => {
+  socket = io({
+    extraHeaders: {
+      "x-token": localStorage.getItem("token"),
+    },
+  });
+
+  socket.on("connect", () => {
+    console.log("Online");
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Offline");
+  });
+
+  socket.on("recibir:mensajes", (payload) => {
+    dibujarMensajes(payload);
+  });
+
+  socket.on("usuarios:activos", (payload) => {
+    dibujarUsuario(payload);
+  });
+
+  socket.on("mensaje:privado", (payload) => {
+    console.log("privado", payload);
+  });
+};
+
+const dibujarUsuario = (usuarios = []) => {
+  let html = "";
+  usuarios.forEach(({ nombre, id }) => {
+    html += `
+    <li>
+      <p>
+        <h5 class="text-success">
+          ${nombre}        
+        </h5>
+        <span class="fs-6 text-muted">${id}</span>
+      </p>    
+    </li>
+    `;
+  });
+
+  ulUsuarios.innerHTML = html;
+};
+
+const dibujarMensajes = (mensajes = []) => {
+  let html = "";
+  mensajes.forEach(({ mensaje, nombre }) => {
+    html += `
+    <li>
+      <p>
+        <span class="text-primary">
+          ${nombre}        
+        </span>
+        <span>${mensaje}</span>
+      </p>    
+    </li>
+    `;
+  });
+
+  ulMensajes.innerHTML = html;
+};
+
+txtMensaje.addEventListener("keyup", ({ keyCode }) => {
+  const mensaje = txtMensaje.value;
+  const uid = txtUid.value;
+
+  if (keyCode !== 13) return;
+  if (mensaje.length === 0) return;
+
+  socket.emit("enviar:mensaje", { mensaje, uid });
+  txtMensaje.value = "";
+});
+
+const main = async () => {
+  await validarJWT();
+};
+
+main();
